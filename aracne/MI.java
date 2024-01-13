@@ -124,13 +124,20 @@ public class MI {
 			) {
 		this.genes = rankData2.keySet().toArray(new String[0]);
 		Arrays.sort(genes);
-		this.setSampleNumber(rankData1.get(genes[0]).length);
+		this.setSampleNumber(rankData2.get(genes[0]).length);
 
 		List<String> templist = Arrays.asList(tfList);
+
+		String[] tfGenes=rankData1.keySet().toArray(new String[0]);
+		
 		HashSet<String> temptf = new HashSet<String>(templist);
-		temptf.retainAll(new HashSet<String>(Arrays.asList(genes)));
+		//temptf.retainAll(new HashSet<String>(Arrays.asList(genes)));
+		temptf.retainAll(new HashSet<String>(Arrays.asList(tfGenes))); //fix by cz Feb 10, 2021
+
 		tfList = temptf.toArray(new String[0]);
 		Arrays.sort(tfList);
+
+		System.out.println("TFs validated: "+tfList.length);
 
 		// Loop to check which edges are kept. It will generate the finalNetwork HashMap
 		finalNetwork = new HashMap<String, HashMap<String, Double>>();
@@ -149,6 +156,7 @@ public class MI {
 		executor.shutdown();
 		while (!executor.isTerminated()) {
 			// do not continue before all threads finish
+			//System.out.println("Number of remaining active threads: "+executor.getQueue().size());
 		}
 
 		System.out.println("TFs processed: "+tfList.length);
@@ -430,41 +438,44 @@ public class MI {
 		}
 		double[] rr = fitNull(mis,20);
 		double miThreshold = rr[1]*Math.log(miPvalue)+rr[0]; // This looks a lot like the config_kernel.txt parameters
-		System.out.println("Parameters for fitted threshold function: "+Arrays.toString(fitNull(mis,100)));
+		//System.out.println("Parameters for fitted threshold function: "+Arrays.toString(fitNull(mis,100)));
+		System.out.println("Parameters for fitted threshold function: "+Arrays.toString(fitNull(mis,20))); //change by cz, Feb 10, 2021
 		System.out.println("MI threshold: "+miThreshold);
 		return(miThreshold);
 	}
 
 	// Fit a null distribution method
-	private double[] fitNull(double[] _x, int _tailLength){
-		Arrays.sort(_x);
-		double[] y = new double[_x.length];
-		for(int i=0; i<_x.length; i++){
-			y[i] = (_x.length-i)*1.0/_x.length;
+	//https://mathworld.wolfram.com/LeastSquaresFitting.html
+	// y=beta1 * x + beta0
+	// x - log (p), p follows a uniform distribution
+	// y - MI
+
+	private double[] fitNull(double[] _mis, int _tailLength){
+		Arrays.sort(_mis);
+		double[] p = new double[_mis.length];
+		for(int i=0; i<_mis.length; i++){
+			p[i] = (_mis.length-i)*1.0/_mis.length;
 		}
-		double[] tailx = new double[_tailLength];
+		double[] tailp = new double[_tailLength];
 		double[] tailMI = new double[_tailLength];
-		System.arraycopy(y, y.length-_tailLength, tailx, 0, _tailLength);
-		System.arraycopy(_x, _x.length-_tailLength, tailMI, 0, _tailLength);
-		for(int i=0; i<tailx.length; i++){
-			tailx[i] = Math.log(tailx[i]);
+		System.arraycopy(p, p.length-_tailLength, tailp, 0, _tailLength);
+		System.arraycopy(_mis, _mis.length-_tailLength, tailMI, 0, _tailLength);
+		for(int i=0; i<tailp.length; i++){
+			tailp[i] = Math.log(tailp[i]);
 		}
-		double[] temp = tailx;
-		tailx = tailMI;
-		tailMI = temp;
 		double sumx = 0.0;
 		double sumy = 0.0;
-		for(int i=0; i<tailx.length; i++){
-			sumx  += tailMI[i];
-			sumy  += tailx[i];
+		for(int i=0; i<tailp.length; i++){
+			sumx  += tailp[i];
+			sumy  += tailMI[i];
 		}
-		double xbar = sumx / tailx.length;
-		double ybar = sumy / tailx.length;
+		double xbar = sumx / tailp.length;
+		double ybar = sumy / tailp.length;
 		double xxbar = 0.0;
 		double xybar = 0.0;
-		for (int i = 0; i < tailx.length; i++) {
-			xxbar += (tailMI[i] - xbar) * (tailMI[i] - xbar);
-			xybar += (tailMI[i] - xbar) * (y[i] - ybar);
+		for (int i = 0; i < tailp.length; i++) {
+			xxbar += (tailp[i] - xbar) * (tailp[i] - xbar);
+			xybar += (tailp[i] - xbar) * (tailMI[i] - ybar);
 		}
 		double beta1 = xybar / xxbar;
 		double beta0 = ybar - beta1 * xbar;

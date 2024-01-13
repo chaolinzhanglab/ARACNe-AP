@@ -43,9 +43,10 @@ public class BootstrapConsolidator {
 		// Calculate the occurrence of each edge (count object)
 		// And sum the global mi for each edge
 		System.out.println("Integrating "+listOfFiles.length+" bootstraps...");
+		int i = 0;
 		for (File file : listOfFiles) {
 		    if (file.isFile()) {
-		        System.out.println(file.getName());
+		        System.out.println(i + ": " + file.getName());
 		        try {
 		        	BufferedReader br = new BufferedReader(new FileReader(file));
 		        	String line = "";
@@ -73,6 +74,7 @@ public class BootstrapConsolidator {
 		        catch(Exception e){
 		        	e.printStackTrace();
 		        }
+				i++;
 		    }
 		}
 		

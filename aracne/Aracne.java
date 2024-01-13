@@ -231,7 +231,11 @@ public class Aracne {
 			} else {
 				bootstrapped2 = bootstrapped1;
 			}
+
+			System.out.println("Ranking input matrix 1");
 			rankData1 = bootstrapped1.rank(random);
+
+			System.out.println("Ranking input matrix 2");
 			rankData2 = bootstrapped2.rank(random);
 		}
 
@@ -247,10 +251,13 @@ public class Aracne {
 		String[] tfList = tfSet.toArray(new String[0]);
 		Arrays.sort(tfList);
 
+
 		if(tfList.length==0){
 			System.err.println("The transcription factor file is badly formatted or empty");
 			System.exit(1);
 		}
+
+		System.out.println(tfList.length+" TFs detected in "+transcriptionFactorsFile);
 
 		// Check if the threshold file exists
 		File miThresholdFile = new File(outputFolder+"/miThreshold_p"+formatter.format(miPvalue)+"_samples"+sampleNumber+".txt");
